@@ -23,10 +23,9 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
-        topTF.delegate = self
-        bottomTF.delegate = self
-        
-        
+        topTF.text = "TOP"
+        bottomTF.text = "BOTTOM"
+            
         pickerController.delegate = self
         pickerController.sourceType = .photoLibrary
         pickerController.allowsEditing = false
@@ -35,20 +34,62 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
             NSStrokeColorAttributeName: UIColor.black,
             NSForegroundColorAttributeName: UIColor.white,
             NSFontAttributeName: UIFont(name: "HelveticaNeue-CondensedBlack", size: 40)!,
-            NSStrokeWidthAttributeName: 4]
+            NSStrokeWidthAttributeName: -2 ]
         
         topTF.defaultTextAttributes = memeTextAttributes
         bottomTF.defaultTextAttributes = memeTextAttributes
+        
+        topTF.delegate = self
+        bottomTF.delegate = self
     }
     
     override func viewWillAppear(_ animated: Bool) {
         
         cameraButton.isEnabled = UIImagePickerController.isSourceTypeAvailable(.camera)
+        subscribeToKeyboardNotifications()
     }
-
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        
+        super.viewWillDisappear(animated)
+        unsubscribeFromKeyboardNotifications()
+    }
+    
+    func keyboardWillHide(_ notification:Notification) {
+        
+        self.view.frame.origin.y = 0
+    }
+    
+    // Method to move the view vertically
+    func keyboardWillShow(_ notification:Notification ){
+        
+        self.view.frame.origin.y = 0 - getKeyboardHeight(notification)
+    }
+    
+    // Retrieves the height of the keyboard
+    func getKeyboardHeight(_ notification:Notification) -> CGFloat{
+        
+        let userInfo = notification.userInfo
+        
+        let keyboardSize = userInfo![UIKeyboardFrameEndUserInfoKey] as! NSValue
+        
+        return keyboardSize.cgRectValue.height
+    }
+    
+    // Listening for application wide event: UIKeyboardWillShow
+    func subscribeToKeyboardNotifications() {
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(_:)), name: .UIKeyboardWillShow, object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(_:)), name: .UIKeyboardWillHide, object: nil)
+    }
+    
+    // Not listening to UIKeyboardWillShow event
+    func unsubscribeFromKeyboardNotifications() {
+        
+        NotificationCenter.default.removeObserver(self, name: .UIKeyboardWillShow, object: nil)
+        
+        NotificationCenter.default.removeObserver(self, name: .UIKeyboardWillHide, object: nil)
     }
 
     @IBAction func pickImage(_ sender: Any) {
@@ -82,6 +123,7 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         
         textField.resignFirstResponder()
+        
         return true
     }
    
