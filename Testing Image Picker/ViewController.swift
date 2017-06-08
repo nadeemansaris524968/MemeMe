@@ -11,6 +11,10 @@ import UIKit
 class ViewController: UIViewController, UINavigationControllerDelegate, UIImagePickerControllerDelegate, UITextFieldDelegate {
     var pickerController = UIImagePickerController()
     
+    @IBOutlet weak var shareBTN: UIBarButtonItem!
+    
+    @IBOutlet weak var navbar: UINavigationBar!
+    
     @IBOutlet weak var topTF: UITextField!
     
     @IBOutlet weak var bottomTF: UITextField!
@@ -19,9 +23,16 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
     
     @IBOutlet weak var cameraButton: UIBarButtonItem!
     
+    @IBOutlet weak var toolbar: UIToolbar!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
+        
+        // Disabling Share button when imageView is nil
+        if (imageView.image == nil){
+            shareBTN.isEnabled = false
+        }
         
         topTF.text = "TOP"
         bottomTF.text = "BOTTOM"
@@ -55,6 +66,47 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
         unsubscribeFromKeyboardNotifications()
     }
     
+    @IBAction func shareBTN(_ sender: Any) {
+        
+        let memedImage:UIImage = generateMemedImage()
+        
+        let memeToShare:[UIImage] = [memedImage]
+        
+        let activityViewController = UIActivityViewController(activityItems: memeToShare, applicationActivities: nil)
+        
+        // So that the app on iPads doesn't crash
+        activityViewController.popoverPresentationController?.sourceView = self.view
+        
+        self.present(activityViewController, animated: true) { 
+            self.save(memedImage)
+        }
+    }
+    
+    func save(_ memedImage:UIImage){
+        
+        // Create the meme
+        let meme = Meme(topText: topTF.text!, bottomText: bottomTF.text!, originalImage: imageView.image!, memedImage: memedImage)
+    }
+    
+    func generateMemedImage() -> UIImage {
+        
+        // Hide toolbar and navbar
+        toolbar.isHidden = true
+        navbar.isHidden = true
+        
+        // Render view to an image. Basically grabbing the screen
+        UIGraphicsBeginImageContext(self.view.frame.size)
+        view.drawHierarchy(in: self.view.frame, afterScreenUpdates: true)
+        let memedImage: UIImage = UIGraphicsGetImageFromCurrentImageContext()!
+        UIGraphicsEndImageContext()
+        
+        // Unhide toolbar
+        toolbar.isHidden = false
+        navbar.isHidden = false
+        
+        return memedImage
+    }
+    
     func keyboardWillHide(_ notification:Notification) {
         
         self.view.frame.origin.y = 0
@@ -63,7 +115,9 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
     // Method to move the view vertically
     func keyboardWillShow(_ notification:Notification ){
         
+        if bottomTF.isEditing == true {
         self.view.frame.origin.y = 0 - getKeyboardHeight(notification)
+        }
     }
     
     // Retrieves the height of the keyboard
@@ -105,6 +159,10 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
         pickerController.allowsEditing = false
         
         self.present(pickerController, animated: true, completion: nil)
+        
+        if (imageView.image != nil){
+            shareBTN.isEnabled = true
+        }
     }
     
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
@@ -118,6 +176,9 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
         
         pickerController.dismiss(animated: true, completion: nil)
         
+        if (imageView.image != nil){
+            shareBTN.isEnabled = true
+        }
     }
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
